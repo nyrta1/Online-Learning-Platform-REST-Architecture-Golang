@@ -13,6 +13,7 @@ import (
 	"online-learning-platform/internal/rest/routers"
 	"online-learning-platform/pkg/compose"
 	"online-learning-platform/pkg/logger"
+	"online-learning-platform/pkg/session"
 	"os"
 	"os/signal"
 	"strconv"
@@ -75,6 +76,7 @@ var appConfig config.App
 func main() {
 	logger.InitLogger()
 	err := compose.StartDockerComposeService()
+
 	if err != nil {
 		logger.GetLogger().Fatal("Error starting Docker Compose service:", err)
 	}
@@ -85,6 +87,7 @@ func main() {
 		DB:    initializeDB(),
 		Redis: initializeRedis(),
 	}
+	session.NewUserSessionStore(&appConfig.Redis)
 
 	dbInstance, err := db.GetDBInstance(appConfig.DB)
 	if err != nil {
@@ -92,16 +95,17 @@ func main() {
 	}
 
 	userRepo := repository.NewUserRepository(dbInstance)
-	//courseRepo := repository.NewCourseRepository(dbInstance)
-	//lessonRepo := repository.NewLessonRepository(dbInstance)
+	roleRepo := repository.NewRoleRepository(dbInstance)
+	courseRepo := repository.NewCourseRepository(dbInstance)
+	lessonRepo := repository.NewLessonRepository(dbInstance)
 
-	authHandlers := handlers.NewAuthHandlers(userRepo)
-	//newsHandlers := handlers.NewNewsHandlers(newsRepo, tagRepo)
-	//tagHandlers := handlers.NewTagHandlers(tagRepo, newsRepo)
+	authHandlers := handlers.NewAuthHandlers(userRepo, roleRepo)
+	courseHandlers := handlers.NewCourseHandler(courseRepo)
+	lessonHandler := handlers.NewLessonHandler(lessonRepo)
 
 	r := gin.Default()
 
-	router := routers.NewRouters(*authHandlers)
+	router := routers.NewRouters(*authHandlers, *courseHandlers, *lessonHandler)
 	router.SetupRoutes(r)
 	r.Use(rateLimitMiddleware())
 

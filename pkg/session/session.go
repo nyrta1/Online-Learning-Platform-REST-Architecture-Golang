@@ -66,3 +66,28 @@ func SetSessionLoggedID(c *gin.Context, userID int) error {
 	}
 	return nil
 }
+
+func RemoveSessionUserID(c *gin.Context) error {
+	session, err := store.Get(c.Request, sessionName)
+	if err != nil {
+		return err
+	}
+
+	delete(session.Values, sessionKey)
+
+	err = session.Save(c.Request, c.Writer)
+	if err != nil {
+		return err
+	}
+
+	c.SetCookie(
+		sessionName,
+		"",
+		-1,
+		"/",
+		"",
+		false,
+		true)
+
+	return nil
+}
