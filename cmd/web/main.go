@@ -125,11 +125,10 @@ func gracefulShutdown(server *http.Server) {
 		<-stop
 		logger.GetLogger().Info("Server is shutting down...")
 
-		// TODO: Uncomment these lines when the project finished
-		//if err := compose.StopDockerComposeService(); err != nil {
-		//	logger.GetLogger().Error("Error stopping Docker Compose service:", err)
-		//}
-		//logger.GetLogger().Info("Docker Compose service stopped successfully!")
+		if err := compose.StopDockerComposeService(); err != nil {
+			logger.GetLogger().Error("Error stopping Docker Compose service:", err)
+		}
+		logger.GetLogger().Info("Docker Compose service stopped successfully!")
 
 		timeout := 5 * time.Second
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
